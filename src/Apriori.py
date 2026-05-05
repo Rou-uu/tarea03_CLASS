@@ -5,7 +5,7 @@ from mlxtend.frequent_patterns import apriori, fpgrowth, association_rules
 from mlxtend.preprocessing import TransactionEncoder
 
 # --- Carga dataset
-data = pd.read_csv('data_secretariado.csv')
+data = pd.read_csv('data/data_secretariado.csv')
 
 # Manejo de fechas para sacar edad y mes
 data['FECHA_NACIMIENTO'] = pd.to_datetime(data['FECHA_NACIMIENTO'], errors='coerce')

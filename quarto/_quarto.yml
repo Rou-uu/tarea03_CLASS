@@ -1,0 +1,22 @@
+project:
+  type: manuscript
+
+execute:
+  freeze: auto
+
+jupyter: python3
+engine: jupyter
+
+format:
+  html:
+    toc: true
+    code-fold: true
+    code-summary: "Mostrar código"
+    comments:
+      hypothesis: true
+  docx: default
+  jats: default
+  agu-pdf: default
+
+
+

@@ -1,0 +1,735 @@
+---
+title: Desapariciones en México
+author:
+  - name: José Rubén Alfaro González
+    corresponding: true
+    email: rou@ciencias.unam.mx
+    affiliations:
+      - UNAM
+  - name: Daniela Sanluis
+    corresponding: false
+    email: danielasanluisc@ciencias.unam.mx
+    affiliations:
+      - UNAM
+abstract: |
+  Este trabajo aplica técnicas de minería de datos al Registro Nacional de Personas Desaparecidas y No Localizadas de México (SESNSP) con dos objetivos complementarios: descubrir patrones de asociación entre variables demográficas, geográficas y temporales, y construir un modelo de clasificación capaz de predecir el estatus de la víctima (DESAPARECIDA, NO LOCALIZADA o CONFIDENCIAL). Se implementó manualmente el algoritmo Apriori y se compararon sus resultados con las implementaciones de librería de Apriori y FP-Growth, evaluando tanto las reglas generadas como los tiempos de ejecución. Para la tarea de clasificación se entrenó un modelo Random Forest con 300 árboles. Los hallazgos principales muestran que la falta de información no es aleatoria sino sistemática: cuando un campo aparece como CONFIDENCIAL, los demás campos del expediente tienden a estarlo también con confianza del 100%. El clasificador alcanza un desempeño excelente para las clases CONFIDENCIAL (F1 = 1.00) y DESAPARECIDA (F1 = 0.97), pero presenta dificultades para distinguir la clase minoritaria NO LOCALIZADA (F1 = 0.38), reflejando el sesgo del propio archivo institucional.
+plain-language-summary: |
+  Analizamos el registro de personas desaparecidas en México buscando dos cosas: patrones que aparecen juntos con frecuencia entre las variables (por ejemplo, qué estados se asocian con qué tipos de registro) y la posibilidad de predecir automáticamente el estatus de una víctima a partir del resto de la información del expediente. Encontramos que la falta de datos no es casual: cuando un campo aparece como "Confidencial", los demás campos del expediente también suelen estarlo. Algunos estados, como Jalisco, concentran una proporción de información oculta mucho mayor que el resto del país. El predictor que construimos funciona muy bien para reconocer expedientes confidenciales y casos clasificados como "Desaparecida", pero falla al identificar a las personas "No localizadas", que son una minoría en el archivo. La conclusión central es que un modelo automático solo puede ser tan bueno como los datos que recibe, y este registro presenta sesgos estructurales que cualquier análisis hereda.
+key-points:
+  - Una proporción significativa de los datos (hasta ~40%) está marcada como CONFIDENCIAL, lo que requiere un manejo cuidadoso antes del análisis estadístico para evitar sesgos
+  - Las personas desaparecidas son predominantemente hombres (según la moda), con una edad promedio de aproximadamente 32 años y una desviación estándar de ~16 años, concentrando el riesgo en el rango de 17 a 45 años
+  - Las desapariciones presentan alta heterogeneidad geográfica (entropía de Shannon elevada en ENTIDAD y MUNICIPIO), confirmando que es un fenómeno nacional y no focalizado en una sola región
+  - La tendencia de desapariciones ha incrementado a lo largo del tiempo, con el año 2024 registrando el mayor número de casos en el dataset
+date: last-modified
+bibliography: references.bib
+citation:
+  container-title: Earth and Space Science
+number-sections: true
+jupyter: python3
+---
+
+# Inicio del análisis
+
+## Carga del dataset
+Cargamos el dataset. Además, podemos ver la forma del DS, que contiene 133,886 filas, y 11 columnas. Más información respecto a la información que proporciona cada una de las columnas será dada en el pdf que adjuntamos. 
+
+```{python}
+# Importación de librerías
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+import plotly.express as px
+import plotly.graph_objects as go
+from datetime import datetime
+import warnings
+import geopandas as gpd
+from scipy.stats import entropy
+import ipywidgets as widgets
+from scipy.stats import skew, kurtosis
+```
+
+```{python}
+# Cargar dataset
+df = pd.read_csv('./data/data_secretariado.csv')
+f = df.shape[0]
+col = df.shape[1]
+
+print(f"Dataset cargado exitosamente")
+print("Número de filas:", f)
+print("Número de columnas:", col)
+
+print("Primera inspección: ")
+df.head()
+```
+
+También podemos ver los tipos de datos con los que vamos a contar. La mayoría serán datos categoricos o temporales, pero a partir de estos podemos calcular ciertos datos que nos serán de utilidad como la edad al momento de la desaparición (lo haremos más adelante).
+
+```{python}
+df.info()
+```
+
+Y la cantidad de valores únicos de cada columna. Hay que tomar en cuenta que uno de esos valores es CONFIDENCIAL, lo que nos indica que no se tiene información de esa persona.
+
+```{python}
+def valores_unicos(df, columna):
+    conteo = df[columna].value_counts().reset_index()
+    conteo.columns = [columna, "Conteo"]
+    conteo["Porcentaje"] = (conteo["Conteo"] / len(df) * 100).round(2)
+    
+    display(conteo.style
+        .set_caption(f"Valores únicos en {columna}")
+        .bar(subset=["Conteo"], color="#E05C5C", vmin=0)
+        .format({"Conteo": "{:,}", "Porcentaje": "{:.2f}%"})
+        .set_properties(**{"text-align": "left"})
+    )
+
+resumen = pd.DataFrame({
+    "Columna": df.columns,
+    "Valores_Unicos": [df[col].nunique() for col in df.columns]
+}).sort_values("Valores_Unicos", ascending=False)
+
+# Display hecho con ayuda de claude para mejor visualización
+display(resumen.style
+    .set_caption("Valores únicos por columna")
+    .bar(subset=["Valores_Unicos"], color="#E05C5C", vmin=0)
+    .format({"Valores_Unicos": "{:,}"})
+    .set_properties(**{"text-align": "left"})
+)
+```
+
+
+## 2. Análisis de datos faltantes y confidenciales
+### Cantidad de datos faltantes y confidenciales
+A continuación se muestra la cantidad de datos nulos del dataset. Podemos ver que la mayoría de datos nulos son de los campos de fechas, ya sea de nacimiento, desaparicion, o de registro. Además, es un porcentaje bastante alto de información perdida principalmente en las fechas de nacimiento, llegando casi a un 22%. Fuera de eso, las demás columnas casi no tienen datos faltantes, pero falta revisar la cantidad de datos confidenciales.
+
+```{python}
+missing = pd.DataFrame({
+    'Columna': df.columns,
+    'Valores_Nulos': df.isnull().sum(),
+    'Porcentaje': (df.isnull().sum() / len(df)) * 100
+}).sort_values('Valores_Nulos', ascending=False)
+
+print("Valores nulos por columna:")
+print(missing.to_string(index=False))
+
+```
+
+Aquí se muestra la cantidad de información confidencial. Se puede ver que la cantidad de información confidencial en cada columna es la misma, por lo que podemos intuir que son casos que siguen siendo confidenciales debido a varias razones (casos abiertos, en proceso de investigación, etc.), y no sucede que haya un registro con información confidencial y no confidencial mezclada en las columnas correspondientes.
+
+```{python}
+confidential = pd.DataFrame({
+    'Columna': df.columns,
+    'Valores_Confidenciales': [(df[col] == 'CONFIDENCIAL').sum() for col in df.columns],
+    'Porcentaje': [(df[col] == 'CONFIDENCIAL').sum() / len(df) * 100 for col in df.columns]
+}).sort_values('Valores_Confidenciales', ascending=False)
+
+print("\nValores confidenciales por columna:")
+print(confidential.to_string(index=False))
+```
+
+Además, con un poco (bastante) de ayuda de Claude, podemos visualizar de manera más efectiva la cantidad de información faltante por cada uno de los estados y el porcentaje correspondiente. Lo que si vemos, es que la mayoría de la información perdida no es debido a que no se registre, sino que hay una gran cantidad de información confidencial. Además, no parece haber relación alguna entre datos faltantes y los estados, sin embargo, si es posible ver que hay estados como Jalisco que tienen mucha información faltante en la mayoría de las columnas. Lamentablemente los widgets y las funciones interactivas no funcionan en Quarto, pero en el repo también se adjunta el .ipynb por si se quiere visualizar
+
+```{python}
+def faltantes_por_entidad(df, columna, contar_confidencial=True):
+    resultados = []
+    for entidad, sub_df in df.groupby("ENTIDAD"):
+        registros = len(sub_df)
+        nulos = sub_df[columna].isnull().sum()
+        confidencial = (sub_df[columna] == "CONFIDENCIAL").sum() if contar_confidencial else 0
+        faltantes = nulos + confidencial
+        porcentaje = (faltantes / registros) * 100
+        resultados.append({
+            "Entidad": entidad.upper(),
+            "Porcentaje": round(porcentaje, 2)
+        })
+    return pd.DataFrame(resultados)
+
+# Cargar GeoJSON
+mexico = gpd.read_file("./images/mexicoHigh.json")
+mexico["name"] = mexico["name"].str.upper()
+
+# Mapeo de nombres si es necesario
+mapeo = {
+    "COAHUILA DE ZARAGOZA": "COAHUILA",
+    "VERACRUZ DE IGNACIO DE LA LLAVE": "VERACRUZ",
+    "MICHOACÁN DE OCAMPO": "MICHOACÁN",
+    # agregar los que no coincidan
+    "ESTADO DE MÉXICO": "MÉXICO",
+}
+
+def mostrar_mapa(columna, contar_confidencial):
+    datos = faltantes_por_entidad(df, columna, contar_confidencial)
+    datos["Entidad"] = datos["Entidad"].replace(mapeo)
+    
+    # Desglose por entidad
+    desglose = []
+    for entidad, sub_df in df.groupby("ENTIDAD"):
+        registros = len(sub_df)
+        nulos = sub_df[columna].isnull().sum()
+        confidencial = (sub_df[columna] == "CONFIDENCIAL").sum()
+        desglose.append({
+            "Entidad": entidad.upper(),
+            "Registros": registros,
+            "Nulos": nulos,
+            "Confidencial": confidencial,
+            "Total_Faltantes": nulos + confidencial,
+            "% Faltantes": round((nulos + confidencial) / registros * 100, 2)
+        })
+    desglose = pd.DataFrame(desglose).sort_values("% Faltantes", ascending=False)
+    print(f"\nDesglose de datos faltantes en: {columna}")
+    print(desglose.to_string(index=False))
+    
+    # Mapa
+    mapa = mexico.merge(datos, left_on="name", right_on="Entidad", how="left")
+    
+    fig, ax = plt.subplots(1, 1, figsize=(15, 10))
+    mapa.plot(
+        column="Porcentaje",
+        cmap="YlOrRd",
+        linewidth=0.8,
+        edgecolor="black",
+        legend=True,
+        legend_kwds={"label": "% Datos Faltantes", "shrink": 0.6},
+        missing_kwds={"color": "lightgrey", "label": "Sin datos"},
+        vmin=0,
+        vmax=100,
+        ax=ax
+    )
+    titulo = f"Datos faltantes en {columna} por entidad"
+    titulo += " (incluye CONFIDENCIAL)" if contar_confidencial else " (solo nulos)"
+    ax.set_title(titulo, fontsize=14)
+    ax.axis("off")
+    plt.tight_layout()
+    plt.show()
+
+columnas = [col for col in df.columns if col not in ["ID_VICTIMA", "ENTIDAD", "CVE_ENT"]]
+
+# Nota: widgets.interact no funciona en HTML estático
+# Para ver los mapas, ejecuta una columna específica directamente:
+# Ejemplo: mostrar_mapa("SEXO", contar_confidencial=True)
+
+# Comentado para permitir preview estática
+# widgets.interact(
+#     mostrar_mapa,
+#     columna=columnas,
+#     contar_confidencial=widgets.Checkbox(value=True, description="Incluir CONFIDENCIAL")
+# )
+```
+
+# Calculo de medidas e interpretación
+## Analisis de localización
+Las variables que estaremos utilizando serán las siguientes:
+
+| Variable            | Medidas                          |
+|---------------------|----------------------------------|
+| EDAD_DESAPARICION   | Moda, media, mediana y cuartiles |
+| SEXO                | Moda                             |
+| ESTATUS_VICTIMA     | Moda                             |
+| ENTIDAD             | Moda                             |
+| MUNICIPIO           | Moda                             |
+| FECHA_DESAPARICION  | Moda y mediana                   |
+
+En la mayoría de las variables anteriores, la información nula es mínima, sin embargo, la cantidad de información confidencial es considerable, y podría meter ruido al análisis de los datos. Además, en algunos estados la perdida de información llega incluso a 60% y en casos como los de Campeche que 60% de 135 nos deja con solamente ~50 casos con información útil, lo cual hace imposible hacer una estadistica más general para el estado. Aún así, la información confidencial no aporta más allá de lo visualizado anteriormente, y no podemos "rellenar" los datos pues no hay ni (1) suficiente información y (2) los casos confidenciales no tienen nada de información que nos permita "intuir" las demás medidas pues toda su información es confidencial. Por eso, decidimos crear un sub-dataset con la información confidencial transformada como NaN.
+
+Ahora, también hay una probabilidad de que los casos confidenciales sean todos de un tipo en particular, o que representen a cierto grupo de los datos en particular, por lo que no tener esa información podría introducir cierto sesgo en el análisis.
+
+## Limpieza de Datos
+
+Realizamos una limpieza para obtener análisis limpios:
+
+1. **Valores Faltantes:** Se estandarizan como `NaN`.
+2. **Duplicados:** Se remueven filas idénticas.
+3. **Tipos de Datos Correctos:** Las fechas se pasan a tipo `datetime`.
+4. **Normalización de Categorías:** Se cambian las categorías a MAYÚSCULAS sin espacios.
+5. **Validaciones:** Se validan las edades extraídas por fechas.
+
+```{python}
+# 1. Copia inicial
+df_clean = df.copy()
+
+# 2. Valores Faltantes y Confidenciales
+print("Porcentaje de nulos iniciales ('CONFIDENCIAL' cuenta como cadena no nula):")
+print((df_clean.isnull().sum() / len(df_clean) * 100).round(2), "\\n")
+
+# Reemplazamos la palabra CONFIDENCIAL por NaN
+df_clean.replace('CONFIDENCIAL', pd.NA, inplace=True)
+print("Valores 'CONFIDENCIAL' cambiados a nulos (NaN).")
+
+# 3. Duplicados
+dup_count = df_clean.duplicated().sum()
+print(f"Duplicados encontrados: {dup_count}")
+if dup_count > 0:
+    df_clean.drop_duplicates(inplace=True)
+    print("Duplicados eliminados.")
+
+# 4. Formato de Fechas Correcto
+date_columns = ['FECHA_NACIMIENTO', 'FECHA_DESAPARICION', 'FECHA_REGISTRO']
+for col in date_columns:
+    df_clean[col] = pd.to_datetime(df_clean[col], errors='coerce')
+
+# 5. Normalización de Categorías
+cat_cols = ['SEXO', 'ESTATUS_VICTIMA', 'ENTIDAD', 'MUNICIPIO', 'ORIGEN_REPORTE']
+for col in cat_cols:
+    df_clean[col] = df_clean[col].astype(str).str.strip().str.upper()
+    df_clean[col].replace('NAN', pd.NA, inplace=True)
+
+# 6. Validaciones (Edades y Fechas)
+df_clean['EDAD_DESAPARICION'] = (df_clean['FECHA_DESAPARICION'] - df_clean['FECHA_NACIMIENTO']).dt.days // 365
+
+# Filtrar edades no realistas
+invalid_ages = df_clean[(df_clean['EDAD_DESAPARICION'] < 0) | (df_clean['EDAD_DESAPARICION'] > 120)]
+print(f"Registros con edad extraña (menor a 0 o mayor a 120, debido a errores de captura de año): {len(invalid_ages)}")
+
+# Limpiar las edades inválidas (dejarlas como nulas)
+df_clean.loc[invalid_ages.index, 'EDAD_DESAPARICION'] = pd.NA
+df_clean.loc[invalid_ages.index, 'FECHA_NACIMIENTO'] = pd.NaT
+
+print("Limpieza finalizada.")
+df_clean.head()
+```
+
+### Exportación del Archivo Limpio
+
+Exportamos el dataset limpio (`data_secretariado_limpio.csv`) para poder cargarlo directamente sin hacer los procesos en cada análisis más adelante.
+
+```{python}
+path_limpio = './data/data_secretariado_limpio.csv'
+df_clean.to_csv(path_limpio, index=False)
+print(f"CSV de datos limpio exportado con éxito en: {path_limpio}")
+```
+
+```{python}
+'''
+Funciones auxiliares para graficar
+'''
+def plot_histograma(series, titulo=None, color="#E05C5C", bins=40):
+    """
+    Grafica un histograma de una serie numérica con media y mediana.
+
+    Args:
+        series  : Serie de pandas a graficar (ya limpia, sin NaN)
+        titulo  : Título de la gráfica. Si es None, usa el nombre de la serie
+        color   : Color de las barras (hex o nombre)
+        bins    : Número de bins del histograma
+    """
+    s = series.dropna()
+    titulo = titulo or f"Distribución de {s.name}"
+
+    fig, ax = plt.subplots(figsize=(8, 4))
+    ax.hist(s, bins=bins, color=color, edgecolor="white", linewidth=0.5)
+    ax.axvline(s.mean(),   color="#2C2C2C", linestyle="--", linewidth=1.5, label=f"Media: {s.mean():.1f}")
+    ax.axvline(s.median(), color="#555555", linestyle=":",  linewidth=1.5, label=f"Mediana: {s.median():.1f}")
+    ax.set_title(titulo, fontsize=14, fontweight="bold", pad=12)
+    ax.set_xlabel(s.name)
+    ax.set_ylabel("Frecuencia")
+    ax.legend()
+    ax.spines[["top", "right"]].set_visible(False)
+    plt.tight_layout()
+    plt.show()
+```
+
+### EDAD_DESAPARICION
+Vamos a calcular las medidas de localización de la edad de desaparición de las personas. Usando las funciones de pandas, obtener sus cosas es sencillo. Ahora, de los resultados notamos algunas cosas raras. Parece ser que hay ciertos ejemplares que fueron mal puestos, pues los extremos de los rangos son [-13, 1830], es decir, hay personas que tienen -13 años, y otras que tienen 1830.
+
+```{python}
+df_clean['EDAD_DESAPARICION'].describe()
+
+plot_histograma(df_clean["EDAD_DESAPARICION"], titulo="Distribución de edad al momento de desaparición")
+```
+
+Esto es claramente un error en el registro de los datos (a menos que haya personas de 1830 y -13 años), y queremos ver cuantos de estos hay. Asumiremos que una persona a lo más puede vivir 130 años actualmente, por lo que veremos cuantas personas hay fuera de ese rango. Podemos ver que la cantidad no es tanta, sin embargo, cuando reducimos el rango a 100 años como máximo, la cantidad de personas se cuatriplica. Esto podría significar que efectivamente hay ~400 personas que desaparecieron con más de 100 años, pero también podría significar un error de dedo al teclear las fechas.
+
+```{python}
+fuera_rango = df_clean[(df_clean["EDAD_DESAPARICION"] < 0) | (df_clean["EDAD_DESAPARICION"] > 130)]
+rango_curioso = df_clean[(df_clean["EDAD_DESAPARICION"] >= 100) & (df_clean["EDAD_DESAPARICION"] <= 130)]
+
+print("Registros fuera del rango [0, 130]:", len(fuera_rango))
+print("Porcentaje del total:", round(len(fuera_rango) / len(df) * 100, 2))
+```
+
+Si calculamos nuevamente las medidas con el rango ajustado, podemos ver un histograma más bonito. Además, podemos calcular su asimetría y exceso de curtosis para ver que tan frecuentes son los valores extremos, y si tenemos alguna cola más larga que la otra.
+
+```{python}
+df_rangVal = df_clean[
+    (df_clean["EDAD_DESAPARICION"] >= 0) & 
+    (df_clean["EDAD_DESAPARICION"] <= 130)
+].copy()
+
+df_rangVal['EDAD_DESAPARICION'].describe()
+
+plot_histograma(df_rangVal['EDAD_DESAPARICION'], titulo="Edad al momento de desaparición (solo valores válidos)")
+```
+
+```{python}
+edad = df_rangVal['EDAD_DESAPARICION'].dropna()
+
+asimetria = skew(edad)
+curtosis_val = kurtosis(edad)
+
+print(f"Asimetría (skewness): {asimetria:.4f}")
+print(f"Curtosis (excess kurtosis): {curtosis_val:.4f}")
+```
+
+Vemos que la gráfica tiene una cola más larga hacia la derecha, pues su asimetria es mayor a 0. También, su exceso de curtosis es mayor a 0, lo que indica que los valores extremos son más frecuentes.
+
+Ahora, veremos la cantidad de personas que hay en un rango entre 100 y 130 años y las separaremos por estados. Haciendo un poco de investigación en internet, encontramos que la probabilidad de que una persona viva más de 100 años es de 0.14%, la cual es muy baja. Por eso, separaremos por estados y veremos si cada estado tiene una cantidad pequeña de muestras de personas de más de 100 años. En caso de que las muestras esten distribuidas de forma uniforme a lo largo de todos los estados, podríamos asumir que efectivamente hay personas de más de 100 años desapareciendo en todos los estados, pero puede que eocntremos otros valores que idiquen otras cosas.
+
+```{python}
+print(rango_curioso['ENTIDAD'].value_counts())
+```
+
+Aquí vemos algo extraño. En Morelos tenemos 228 muestras de personas que viven más de 100 años, y la cantidad de muestras válidas en Morelos son 707. Vemos que la proporción es de aproximadamente 31%. Este valor es muy alto, y podría indicar que en estados como Morelos que tienen valores altos en outliers este habiendo un problema en como se registran las fechas de nacimiento.
+
+### SEXO
+Ahora, calcularemos la moda del sexo de las personas desaparecidas. Antes de cualqueir cosa, cuando calculamos la moda sobre el dataset original, la moda es CONFIDENCIAL, por lo que el calculo lo haremos sobre el dataset "limpio"
+
+```{python}
+df_clean['SEXO'].mode()
+```
+
+La mayor cantidad de personas desaparecidas son hombres. Ahora, si queremos tratar de ver más allá de esto, no podemos descartar la posibilidad que dentro de los registros, se mantenga como CONFIDENCIAL todos aquellos casos que se catalogen como posible secuetro por género (similar al delito de feminicidio), y que por lo tanto la moda se vea afectada por esto.
+
+Algunos análisis que podríamos llevar acabo sería ver cual es la moda por estado, y buscar si por ejemplo, en algún estado en paricular donde la moda sea mujer, si hay algún problema relacionado al trato de personas y particularmente mujeres, o en algún estado con moda hombres, haya problemas por reclutamiento forzado del crimen organizado.
+
+### ESTATUS_VICTIMA
+Haremos exactamente el mismo procedimiento que realizamos para el sexo del dataset
+
+```{python}
+df_clean['ESTATUS_VICTIMA'].mode()
+```
+
+En este caso, tampoco hay mucho que se pueda explicar. Simplemente la mayoría de las personas desaparecidas siguen desaparecidas al día de hoy (el dataset)
+
+### ENTIDAD
+Vamos a calcular la moda de la entidad con más desapariciones.
+
+```{python}
+df_clean['ENTIDAD'].mode()
+```
+
+Esta medida es particular. Podemos ver que si nos guiamos por la cantidad de elementos "eliminados" por ser confidenciales/nulos, la moda debería de ser el Estado de México, pues es el estado que tiene el mayor número de información disponible. Sin embargo, esta es una de las medidas que no se ve afectada por la falta de información. Todas las filas tienen un valor en ENTIDAD válido, por lo que aunque no sepamos acerca de la información precisa del casos de desaparición, al menos tenemos conocimiento del estado del que se reporto, por lo que no perdemos información por confidencialidad.
+
+### MUNICIPIO
+Para esta medida sacaremos la moda, sin embargo, esta medida puede no resultar de gran utilidad al realizar el analisis en todo el dataset en lugar de hacerlo por entidad, debido a que podría sucede que por ejemplo, el municipio donde más haya desapariciones sea en un estado con la menor cantidad de desapariciones, lo cual a su vez podría suceder debido a que ENTIDAD no tiene información confidencial, pero los MUNICIPIO si, por lo que la relación que podríamos buscar se podría ver sesgada por eso.
+
+```{python}
+df_clean['MUNICIPIO'].mode()
+```
+
+Aún así, la moda resultó ser municipio desconocido.
+
+### FECHA_DESAPARICION
+Para la fecha de desaparicion sacaremos la moda y la mediana. Además, podemos gráficar la cantidad de desapariciones por año para ver una tendencia respecto al tiempo que ha pasado entre la primera desaparicion y la última. 
+
+```{python}
+fecha = df_clean["FECHA_DESAPARICION"].dropna()
+
+mediana = fecha.sort_values().iloc[len(fecha) // 2]
+moda = fecha.mode().iloc[0]
+media = fecha.mean()
+
+print("Media de fecha de desaparición:", media.date())
+print("Mediana de fecha de desaparición:", mediana.date())
+print("Moda de fecha de desaparición:", moda.date())
+```
+
+De ver la mediana, nos damos cuenta que al menos 50% de las desapariciones registradas en este dataset han sido registradas a partir del 2018, a pesar de que el día con más desapariciones fue en 1974. Esto podría ser por la precision con la que estamos calculando la moda. En la gráfica de abajo vemos que el año con más desapariciones fue 2024 (aprox), por lo que si hiciermos una moda por año, el resultado sería distinto. Hacer la moda por día no resulta muy útil, y además puede llevar a malinterpretar los resultados. Si no sacaramos medaiana, y solamente nos guiaramos por la moda del día, pensaríamos que la inseguridad es menor acutalmente, a pesar de que la gráfica de abajo muestra que la tendencía de desapariciones va en aumento.
+
+```{python}
+def plot_desapariciones_por_anio(df):
+    por_anio = (
+        df["FECHA_DESAPARICION"].dropna()
+        .dt.year
+        .value_counts()
+        .sort_index()
+        .reset_index()
+    )
+    por_anio.columns = ["Año", "Conteo"]
+
+    fig, ax = plt.subplots(figsize=(8, 4))
+    ax.bar(por_anio["Año"], por_anio["Conteo"], color="#E05C5C", edgecolor="white", linewidth=0.5)
+    ax.set_title("Desapariciones por año", fontsize=14, fontweight="bold", pad=12)
+    ax.set_xlabel("Año")
+    ax.set_ylabel("Frecuencia")
+    ax.spines[["top", "right"]].set_visible(False)
+    plt.tight_layout()
+    plt.show()
+
+plot_desapariciones_por_anio(df_clean)
+```
+
+## Analisis de variabilidad
+Las medidas que estaremos utilizando serán las siguientes:
+
+| Variable            | Medidas                                      |
+|---------------------|----------------------------------------------|
+| EDAD_DESAPARICION   | Varianza, rango, IQR, desviación estandar    |
+| FECHA_DESAPARICION  | Mínimo, máximo, rango                        |
+| FECHA_REGISTRO      | Mínimo, máximo, rango                        |
+
+Como no tenemos variables númericas además de la edad, hacer un análisis de variabilidad de los datos resulta complicado. Sin embargo, podemos realizar un buen analisis sobre la edad de desaparición. 
+
+### EDAD_DESAPARICION
+Para la edad de desaparición, sacaremos la varianza, el rango, el IQR, y la desviación estandar. Primero lo haremos con el dataset con el rango sin ajustar, y luego lo haremos con el rango ajustado. Debido a que los valores son extremos, deberíamos de ver un cambio en la mayoría de las medidas.
+
+```{python}
+aux = df_clean['EDAD_DESAPARICION'].dropna()
+
+var = aux.var()
+desv = aux.std()
+rango = aux.max() - aux.min()
+iqr = aux.quantile(0.75) - aux.quantile(0.25)
+
+print(f"Varianza: {var:.2f}")
+print(f"Desviación estándar: {desv:.2f}")
+print(f"Rango: {rango:.2f}")
+print(f"Rango intercuartílico (IQR): {iqr:.2f}")
+```
+
+```{python}
+aux = df_rangVal['EDAD_DESAPARICION'].dropna()
+
+var = aux.var()
+desv = aux.std()
+rango = aux.max() - aux.min()
+iqr = aux.quantile(0.75) - aux.quantile(0.25)
+
+print(f"Varianza: {var:.2f}")
+print(f"Desviación estándar: {desv:.2f}")
+print(f"Rango: {rango:.2f}")
+print(f"Rango intercuartílico (IQR): {iqr:.2f}")
+```
+
+Podemos observar que si hubo un cambio medianamente grande. Ver un cambio de aproximadamente 5 años en la desviación estandar significa que podemos ajustar de mejor forma la cantidad de casos y buscar una generalidad. Como la desviación es de 15.81 años, y el promedio es de ~32 años, significa que la mayoría de los casos de desapariciones estan en el rango de [17 - 45] años de edad. Eso significa que los dos grupos más afectados por las desapariciones son los jovenes y los adultos, pero eso forma gran parte de la población, por lo que no podríamos decir que este desapareciendo un cierto perfil de edad.
+
+### FECHA_DESAPARICION
+Para la fecha de desaparición podemos sacar un rango de valores, pero eso ya lo calculamos e hicimos un breve análisis en la sección anterior, por lo que aquí no lo pondremos
+
+### FECHA_REGISTRO
+Sacaremos el rango de valores de las fechas de registro de incidentes. Recordemos que anteriormente calculamos las edades al momento de la desaparición usando la de nacimiento y registro. Obtuvimos valores que no tenían sentido, y vimos que en muchos casos esos valores eran por fechas de nacimeinto mal escritas. Igualmente, podría ser que haya fechas de registro que este causando un cálculo erroneo de la edad de las personas, por lo que eso lo podremos ver en el rango.
+
+```{python}
+rango = df_clean['FECHA_REGISTRO'].max() - df_clean['FECHA_REGISTRO'].min()
+
+print(f"Fecha mínima de registro: {df_clean['FECHA_REGISTRO'].min().date()}")
+print(f"Fecha máxima de registro: {df_clean['FECHA_REGISTRO'].max().date()}")
+print(f"Rango de fechas de registro: {rango.days / 365} años")
+```
+
+En este caso no vemos valores anormales, lo que se puede deber a que el registro de las fechas se hace de forma automática en el sistema, evitando errores como los de las fechas de nacimiento. Además, vemos que el dataset cubre las desapariciones de aproximadamente 65 años.
+
+### EXTRA: FECHA_NACIMIENTO
+
+```{python}
+rango = df_clean['FECHA_NACIMIENTO'].max() - df_clean['FECHA_NACIMIENTO'].min()
+
+print(f"Fecha mínima de registro: {df_clean['FECHA_NACIMIENTO'].min().date()}")
+print(f"Fecha máxima de registro: {df_clean['FECHA_NACIMIENTO'].max().date()}")
+print(f"Rango de fechas de registro: {rango.days / 365} años")
+```
+
+Vemos que el rango es de casi 300 años. Esto obviamente indica que hay problemas en el dataset. Para poder ver más o menos las fechas que se registran, haremos un histograma con las fechas de nacimiento, y buscaremos cuales son los valores que nos están molestando
+
+```{python}
+def plot_desapariciones_por_anio(df):
+    por_anio = (
+        df["FECHA_NACIMIENTO"].dropna()
+        .dt.year
+        .value_counts()
+        .sort_index()
+        .reset_index()
+    )
+    por_anio.columns = ["Año", "Conteo"]
+
+    fig, ax = plt.subplots(figsize=(8, 4))
+    ax.bar(por_anio["Año"], por_anio["Conteo"], color="#E05C5C", edgecolor="white", linewidth=0.5)
+    ax.set_title("Fechas de nacimiento por año", fontsize=14, fontweight="bold", pad=12)
+    ax.set_xlabel("Año")
+    ax.set_ylabel("Frecuencia")
+    ax.spines[["top", "right"]].set_visible(False)
+    plt.tight_layout()
+    plt.show()
+
+plot_desapariciones_por_anio(df_clean)
+```
+
+Una vez más, podemos observar que hay valores extremos. Para acotar un poco las fechas y ver cuantas fechas de nacimiento nos estan causando ruido, podemos poner como cota máxima el 2026 como año de nacimiento máximo, y como cota inferior 1900 que puede ser cuando se empezó a llevar cuenta de los desaparecidos. Buscaremos la cantidad de fechas que están en esos rangos
+
+```{python}
+fuera_rango = df_clean[
+    (df_clean["FECHA_NACIMIENTO"].dt.year < 1920) | 
+    (df_clean["FECHA_NACIMIENTO"].dt.year > 2026)
+]
+
+print("Registros con fecha de nacimiento fuera del rango [1900, 2026]:", len(fuera_rango))
+print(fuera_rango['ENTIDAD'].value_counts())
+```
+
+Vemos que hay 79 registros, principalmente en Veracruz, lo que podría indicar que una vez más, hay problemas de registro de fechas de nacimiento en esos estados. Ahora, algo curioso que notamos, es que si cambiamos la fecha a 1920, la cantidad de gente en morelos crece a 240 registros. Esto es muy curioso porque previamente habíamos visto que los registros en Morelos tenían un alto porcentaje de gente mayor a 100 años, y que podía ser por malos registros. Sin embargo, con esto podemos ver que casi todos esos registros si podrían ser validos, y que por lo tanto, el dataset tenga cierto sesgo de edad en el estado de Morelos particularmente.  
+
+## Analisis de heterogeneidad
+Buscamos cuantificar qué tan "mezclados" o diversos son los datos dentro de nuestras variables categóricas nominales. Las medidas que estaremos utilizando serán las siguientes:
+
+| Variable            | Medidas                                   |
+|---------------------|-------------------------------------------|
+| SEXO                | Entropía de Shannon, índice de Simpson    |
+| ESTATUS_VICTIMA     | Entropía de Shannon                       |
+| ENTIDAD             | Entropía de Shannon                       |
+| MUNICIPIO           | Entropía de Shannon                       |
+| ORIGEN_REPORTE      | Entropía de Shannon                       |
+
+```{python}
+def get_heterogeneity_stats(series, name):
+    """
+    Función para calcular Entropía de Shannon e Índice de Simpson.
+    Incluye una visualización de la distribución para análisis de diversidad.
+    """
+    counts = series.value_counts(normalize=True)
+    
+    # 1. Entropía de Shannon (H) - Mide el desorden/incertidumbre
+    shannon_h = entropy(counts, base=2)
+    
+    # 2. Índice de Simpson (D) y su Diversidad (1-D) - Mide dominancia
+    simpson_d = np.sum(counts**2)
+    simpson_div = 1 - simpson_d
+    
+    print(f"--- Análisis de Heterogeneidad: {name} ---")
+    print(f"Entropía de Shannon: {shannon_h:.4f} bits")
+    print(f"Índice de Simpson (Dominancia): {simpson_d:.4f}")
+    print(f"Diversidad de Simpson (1-D): {simpson_div:.4f}\n")
+    
+    # Gráfica de apoyo visual
+    plt.figure(figsize=(10, 5))
+    counts_plot = series.value_counts().head(10) 
+    sns.barplot(x=counts_plot.index, y=counts_plot.values, hue=counts_plot.index, palette='viridis', legend=False)
+    plt.title(f'Distribución de {name} (Top 10 Reales)', fontsize=14, pad=20)
+    plt.xticks(rotation=45, ha='right', fontsize=10)
+    plt.grid(axis='y', linestyle='--', alpha=0.3)
+    plt.show()
+```
+
+### SEXO
+```{python}
+print("ANÁLISIS DE DIVERSIDAD: SEXO")
+get_heterogeneity_stats(df_clean['SEXO'], 'SEXO')
+```
+
+Aunque hay víctimas de distintos géneros, los datos no están repartidos de forma equilibrada. Hay una mayoría tan clara de hombres que las estadísticas se inclinan fuertemente hacia ellos, dejando claro que no es un fenómeno que afecte de forma equitativa a toda la población.
+
+### ESTATUS_VICTIMA
+
+```{python}
+print("ANÁLISIS DE DIVERSIDAD: ESTATUS_VICTIMA")
+get_heterogeneity_stats(df_clean['ESTATUS_VICTIMA'], 'ESTATUS_VICTIMA')
+```
+
+Al haber un índice de Simpson alto, significa que hay una categoría que "domina" a todas las demás.
+La inmensa mayoría de las personas en la lista siguen en calidad de desaparecidas. No hay un equilibrio entre personas encontradas y no encontradas; el dataset está "estancado" en una sola situación.
+
+### ENTIDAD
+
+```{python}
+print("ANÁLISIS DE DIVERSIDAD: ENTIDAD FEDERATIVA")
+get_heterogeneity_stats(df_clean['ENTIDAD'], 'ENTIDAD')
+```
+
+La variable ENTIDAD presenta la mayor entropía de Shannon del dataset. Esto confirma que las desapariciones son un fenómeno generalizado. No es algo que le pase a "un solo estado", sino que es un problema que afecta a múltiples regiones de México casi por igual, lo que lo hace mucho más difícil de controlar.
+
+### MUNICIPIO
+
+```{python}
+print("ANÁLISIS DE DIVERSIDAD: MUNICIPIO")
+get_heterogeneity_stats(df_clean['MUNICIPIO'], 'MUNICIPIO')
+```
+
+A nivel municipal, el problema es tan variado que es difícil predecir dónde ocurrirá un caso (entropía alta). Sin embargo, hay ciudades específicas donde el fenómeno deja de estar repartido y se vuelve mucho más frecuente, lo que las convierte en zonas de alto riesgo local. También destaca que en muchos casos no se tiene el dato exacto del lugar, lo que dificulta el análisis preciso.
+
+### ORIGEN_REPORTE
+```{python}
+print("ANÁLISIS DE DIVERSIDAD: ORIGEN_REPORTE")
+get_heterogeneity_stats(df_clean['ORIGEN_REPORTE'], 'ORIGEN_REPORTE')
+```
+
+Analizar el Origen del Reporte es como revisar la salud de nuestras fuentes. Si los datos vienen de muchos lugares distintos, nuestro análisis es más confiable y democrático. Si vienen de uno solo, estamos viendo la realidad a través de un solo lente, lo que podría ocultar lo que otras instituciones están reportando.
+
+## Analisis de concentración
+Las medidas que estaremos sacando son:
+
+| Variable            | Medidas                                   |
+|---------------------|-------------------------------------------|
+| SEXO                | Freciencia relativa a la moda             |
+| ENTIDAD             | HHI                                       |
+| MUNICIPIO           | HHI                                       |
+| EDAD_DESAPARICION   | Indice de Gini y Curva de Lorenz          |
+
+### SEXO
+
+```{python}
+# Frecuencia relativa a la moda para SEXO
+counts_sexo = df_clean['SEXO'].value_counts(normalize=True)
+moda_sexo = counts_sexo.index[0]
+frec_rel_moda = counts_sexo.iloc[0]
+
+print(f"--- Concentración en SEXO ---")
+print(f"Moda: {moda_sexo}")
+print(f"Frecuencia relativa de la moda: {frec_rel_moda:.4f} ({frec_rel_moda*100:.2f}%)")
+```
+
+Al calcular la frecuencia relativa de la moda, observamos que una sola categoría absorbe la gran mayoría de los registros.
+
+### Concentración Geográfica (HHI de Entidad y Municipio)
+
+```{python}
+def calculate_hhi(series, name):
+    """Calcula el Índice de Herfindahl-Hirschman (HHI)"""
+    shares = (series.value_counts(normalize=True) * 100)
+    hhi = np.sum(shares**2)
+    print(f"Índice HHI ({name}): {hhi:.2f}")
+    return hhi
+
+# Ejecución para Entidad y Municipio
+hhi_ent = calculate_hhi(df_clean['ENTIDAD'], "Entidad Federativa")
+hhi_mun = calculate_hhi(df_clean['MUNICIPIO'], "Municipio")
+```
+
+El Índice HHI nos dice si el peligro está "amontonado" en unos pocos puntos del mapa o si está repartido por todos lados. Un valor alto en los Estados confirmaría que solo un puñado de entidades concentran la gran mayoría de los casos, convirtiéndose en los "dueños" del problema. En cambio, en los Municipios, aunque el índice suele ser bajo porque hay miles de localidades, el HHI nos ayuda a detectar si ciudades específicas están absorbiendo un nivel de riesgo desproporcionado comparado con el resto del país.
+
+### EDAD_DESAPARICION
+
+```{python}
+def calculate_gini(data):
+    """Calcula el Coeficiente de Gini para la Edad"""
+    x = np.sort(data.dropna())
+    n = len(x)
+    index = np.arange(1, n + 1)
+    return (np.sum((2 * index - n - 1) * x)) / (n * np.sum(x))
+
+def plot_lorenz_curve(data, title):
+    """Genera la Curva de Lorenz con el estilo visual del equipo"""
+    x = np.sort(data.dropna())
+    n = len(x)
+    lorenz = np.cumsum(x) / np.sum(x)
+    lorenz = np.insert(lorenz, 0, 0)
+    
+    plt.figure(figsize=(7, 7))
+    plt.plot(np.linspace(0, 1, n + 1), lorenz, label='Curva de Lorenz', color='#1f77b4', lw=3)
+    plt.plot([0, 1], [0, 1], label='Igualdad Perfecta', color='#d62728', linestyle='--')
+    plt.fill_between(np.linspace(0, 1, n + 1), lorenz, np.linspace(0, 1, n + 1), alpha=0.1)
+    
+    gini_val = calculate_gini(data)
+    plt.text(0.1, 0.8, f'Gini: {gini_val:.4f}', fontsize=12, fontweight='bold', 
+             bbox=dict(facecolor='white', alpha=0.5))
+    plt.title(f'Análisis de Concentración: {title}', fontsize=14, pad=15)
+    plt.xlabel('Proporción acumulada de víctimas')
+    plt.ylabel('Proporción acumulada de edad')
+    plt.legend()
+    plt.grid(True, linestyle=':', alpha=0.6)
+    plt.show()
+
+# Ejecución para la Edad
+plot_lorenz_curve(df_clean['EDAD_DESAPARICION'], "Edad de Desaparición")
+```
+
+La Curva de Lorenz y el Coeficiente de Gini demuestran que las desapariciones no ocurren en todas las edades. Al observar una desviación clara respecto a la igualdad, confirmamos que el riesgo se concentra en sectores específicos (principalmente jóvenes). Esto nos permite pasar de un análisis general a uno enfocado, identificando perfiles de vulnerabilidad que son fundamentales para diseñar estrategias de prevención y búsqueda criminalística.
+

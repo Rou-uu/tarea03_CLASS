@@ -1,0 +1,692 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.9.36">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+<meta name="author" content="José Rubén Alfaro González">
+<meta name="author" content="Daniela Sanluis">
+<meta name="dcterms.date" content="2026-05-05">
+
+<title>Desapariciones en México</title>
+<style>
+/* Default styles provided by pandoc.
+** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+*/
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+</style>
+
+
+<script src="site_libs/clipboard/clipboard.min.js"></script>
+<script src="site_libs/quarto-html/quarto.js" type="module"></script>
+<script src="site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="site_libs/quarto-html/popper.min.js"></script>
+<script src="site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="site_libs/quarto-html/anchor.min.js"></script>
+<link href="site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting-845c23b38eaddc0f92fda52bfe77a8c8.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="site_libs/bootstrap/bootstrap-8ffd5f67044e5306d9846f29df41dda5.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<script async="" src="https://hypothes.is/embed.js"></script>
+<script>
+  window.document.addEventListener("DOMContentLoaded", function (_event) {
+    document.body.classList.add('hypothesis-enabled');
+  });
+</script>
+
+
+<meta name="citation_title" content="Desapariciones en México">
+<meta name="citation_abstract" content="Este trabajo aplica técnicas de minería de datos al Registro Nacional de Personas Desaparecidas y No Localizadas de México (SESNSP) con dos objetivos complementarios: descubrir patrones de asociación entre variables demográficas, geográficas y temporales, y construir un modelo de clasificación capaz de predecir el estatus de la víctima (DESAPARECIDA, NO LOCALIZADA o CONFIDENCIAL). Se implementó manualmente el algoritmo Apriori y se compararon sus resultados con las implementaciones de librería de Apriori y FP-Growth, evaluando tanto las reglas generadas como los tiempos de ejecución. Para la tarea de clasificación se entrenó un modelo Random Forest con 300 árboles. Los hallazgos principales muestran que la falta de información no es aleatoria sino sistemática: cuando un campo aparece como CONFIDENCIAL, los demás campos del expediente tienden a estarlo también con confianza del 100%. El clasificador alcanza un desempeño excelente para las clases CONFIDENCIAL (F1 = 1.00) y DESAPARECIDA (F1 = 0.97), pero presenta dificultades para distinguir la clase minoritaria NO LOCALIZADA (F1 = 0.38), reflejando el sesgo del propio archivo institucional.
+">
+<meta name="citation_author" content="José Rubén Alfaro González">
+<meta name="citation_author" content="Daniela Sanluis">
+<meta name="citation_publication_date" content="2026-05-05">
+<meta name="citation_cover_date" content="2026-05-05">
+<meta name="citation_year" content="2026">
+<meta name="citation_online_date" content="2026-05-05">
+<meta name="citation_language" content="en">
+<meta name="citation_journal_title" content="Earth and Space Science">
+</head>
+
+<body class="quarto-light">
+
+<header id="title-block-header" class="quarto-title-block default toc-left page-columns page-full">
+  <div class="quarto-title-banner page-columns page-full">
+    <div class="quarto-title column-body">
+      <h1 class="title">Desapariciones en México</h1>
+          </div>
+
+    
+    <div class="quarto-title-meta-container">
+      <div class="quarto-title-meta-column-start">
+            <div class="quarto-title-meta-author">
+          <div class="quarto-title-meta-heading">Authors</div>
+          <div class="quarto-title-meta-heading">Affiliation</div>
+          
+                <div class="quarto-title-meta-contents">
+            <p class="author">José Rubén Alfaro González <a href="mailto:rou@ciencias.unam.mx" class="quarto-title-author-email"><i class="bi bi-envelope"></i></a> </p>
+          </div>
+                <div class="quarto-title-meta-contents">
+                    <p class="affiliation">
+                        UNAM
+                      </p>
+                  </div>
+                      <div class="quarto-title-meta-contents">
+            <p class="author">Daniela Sanluis <a href="mailto:danielasanluisc@ciencias.unam.mx" class="quarto-title-author-email"><i class="bi bi-envelope"></i></a> </p>
+          </div>
+                <div class="quarto-title-meta-contents">
+                    <p class="affiliation">
+                        UNAM
+                      </p>
+                  </div>
+                    </div>
+        
+        <div class="quarto-title-meta">
+
+                      
+                <div>
+            <div class="quarto-title-meta-heading">Published</div>
+            <div class="quarto-title-meta-contents">
+              <p class="date">May 5, 2026</p>
+            </div>
+          </div>
+          
+                
+              </div>
+      </div>
+      <div class="quarto-title-meta-column-end quarto-other-formats-target">
+      <div class="quarto-alternate-formats"><div class="quarto-title-meta-heading">Other Formats</div><div class="quarto-title-meta-contents"><p><a href="index.docx"><i class="bi bi-file-word"></i>MS Word</a></p></div><div class="quarto-title-meta-contents"><p><a href="index.pdf"><i class="bi bi-file-pdf"></i>PDF (agu)</a></p></div><div class="quarto-title-meta-contents"><p><a href="index-meca.zip" data-meca-link="true"><i class="bi bi-archive"></i>MECA Bundle</a></p></div></div></div>
+    </div>
+
+    <div>
+      <div class="abstract">
+        <div class="block-title">Abstract</div>
+        <p>Este trabajo aplica técnicas de minería de datos al Registro Nacional de Personas Desaparecidas y No Localizadas de México (SESNSP) con dos objetivos complementarios: descubrir patrones de asociación entre variables demográficas, geográficas y temporales, y construir un modelo de clasificación capaz de predecir el estatus de la víctima (DESAPARECIDA, NO LOCALIZADA o CONFIDENCIAL). Se implementó manualmente el algoritmo Apriori y se compararon sus resultados con las implementaciones de librería de Apriori y FP-Growth, evaluando tanto las reglas generadas como los tiempos de ejecución. Para la tarea de clasificación se entrenó un modelo Random Forest con 300 árboles. Los hallazgos principales muestran que la falta de información no es aleatoria sino sistemática: cuando un campo aparece como CONFIDENCIAL, los demás campos del expediente tienden a estarlo también con confianza del 100%. El clasificador alcanza un desempeño excelente para las clases CONFIDENCIAL (F1 = 1.00) y DESAPARECIDA (F1 = 0.97), pero presenta dificultades para distinguir la clase minoritaria NO LOCALIZADA (F1 = 0.38), reflejando el sesgo del propio archivo institucional.</p>
+      </div>
+    </div>
+
+
+    <div class="quarto-other-links-text-target">
+    </div>  </div>
+</header><div id="quarto-content" class="page-columns page-rows-contents page-layout-article toc-left">
+<div id="quarto-sidebar-toc-left" class="sidebar toc-left">
+  <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">Table of contents</h2>
+   
+  <ul>
+  <li><a href="#modelo-clasificatorio" id="toc-modelo-clasificatorio" class="nav-link active" data-scroll-target="#modelo-clasificatorio"><span class="header-section-number">1</span> Modelo Clasificatorio</a>
+  <ul class="collapse">
+  <li><a href="#qué-se-hizo" id="toc-qué-se-hizo" class="nav-link" data-scroll-target="#qué-se-hizo"><span class="header-section-number">1.1</span> ¿Qué se hizo?</a></li>
+  <li><a href="#cómo-se-evaluó-el-modelo" id="toc-cómo-se-evaluó-el-modelo" class="nav-link" data-scroll-target="#cómo-se-evaluó-el-modelo"><span class="header-section-number">1.2</span> ¿Cómo se evaluó el modelo?</a></li>
+  <li><a href="#principales-hallazgos" id="toc-principales-hallazgos" class="nav-link" data-scroll-target="#principales-hallazgos"><span class="header-section-number">1.3</span> Principales hallazgos</a>
+  <ul class="collapse">
+  <li><a href="#excelente-desempeño-en-casos-confidenciales" id="toc-excelente-desempeño-en-casos-confidenciales" class="nav-link" data-scroll-target="#excelente-desempeño-en-casos-confidenciales"><span class="header-section-number">1.3.1</span> Excelente desempeño en casos confidenciales</a></li>
+  <li><a href="#buen-desempeño-en-casos-de-desaparición" id="toc-buen-desempeño-en-casos-de-desaparición" class="nav-link" data-scroll-target="#buen-desempeño-en-casos-de-desaparición"><span class="header-section-number">1.3.2</span> Buen desempeño en casos de desaparición</a></li>
+  <li><a href="#desempeño-deficiente-en-no-localizada" id="toc-desempeño-deficiente-en-no-localizada" class="nav-link" data-scroll-target="#desempeño-deficiente-en-no-localizada"><span class="header-section-number">1.3.3</span> Desempeño deficiente en “No localizada”</a></li>
+  <li><a href="#fuerte-sesgo-debido-a-la-distribución-de-los-datos" id="toc-fuerte-sesgo-debido-a-la-distribución-de-los-datos" class="nav-link" data-scroll-target="#fuerte-sesgo-debido-a-la-distribución-de-los-datos"><span class="header-section-number">1.3.4</span> Fuerte sesgo debido a la distribución de los datos</a></li>
+  <li><a href="#impacto-de-los-datos-faltantes-y-confidenciales" id="toc-impacto-de-los-datos-faltantes-y-confidenciales" class="nav-link" data-scroll-target="#impacto-de-los-datos-faltantes-y-confidenciales"><span class="header-section-number">1.3.5</span> Impacto de los datos faltantes y confidenciales</a></li>
+  <li><a href="#el-modelo-aprende-patrones-artificiales" id="toc-el-modelo-aprende-patrones-artificiales" class="nav-link" data-scroll-target="#el-modelo-aprende-patrones-artificiales"><span class="header-section-number">1.3.6</span> El modelo aprende patrones “artificiales”</a></li>
+  </ul></li>
+  <li><a href="#conclusión-general" id="toc-conclusión-general" class="nav-link" data-scroll-target="#conclusión-general"><span class="header-section-number">1.4</span> Conclusión general</a></li>
+  <li><a href="#posibles-mejoras" id="toc-posibles-mejoras" class="nav-link" data-scroll-target="#posibles-mejoras"><span class="header-section-number">1.5</span> Posibles Mejoras</a></li>
+  </ul></li>
+  </ul>
+</nav>
+</div>
+<div id="quarto-margin-sidebar" class="sidebar margin-sidebar zindex-bottom">
+</div>
+<main class="content quarto-banner-title-block" id="quarto-document-content">
+
+
+
+  
+
+
+<section id="modelo-clasificatorio" class="level1" data-number="1">
+<h1 data-number="1"><span class="header-section-number">1</span> Modelo Clasificatorio</h1>
+<section id="qué-se-hizo" class="level2" data-number="1.1">
+<h2 data-number="1.1" class="anchored" data-anchor-id="qué-se-hizo"><span class="header-section-number">1.1</span> ¿Qué se hizo?</h2>
+<p>Se desarrolló un modelo de clasificación con el objetivo de predecir el <strong>estatus de una persona</strong> dentro del dataset (por ejemplo: desaparecida, no localizada o confidencial), utilizando información como edad, ubicación, sexo y otros datos disponibles.</p>
+<p>El propósito principal era identificar si estos datos permiten encontrar patrones que ayuden a distinguir entre los distintos tipos de casos.</p>
+<hr>
+</section>
+<section id="cómo-se-evaluó-el-modelo" class="level2" data-number="1.2">
+<h2 data-number="1.2" class="anchored" data-anchor-id="cómo-se-evaluó-el-modelo"><span class="header-section-number">1.2</span> ¿Cómo se evaluó el modelo?</h2>
+<p>Para evaluar el desempeño del modelo, no solo se revisó qué tan seguido acierta en general, sino también qué tan bien identifica cada tipo de caso en particular.</p>
+<p>Esto es importante porque no todas las categorías están igualmente representadas en los datos, por lo que una buena “precisión general” puede ser engañosa.</p>
+<hr>
+</section>
+<section id="principales-hallazgos" class="level2" data-number="1.3">
+<h2 data-number="1.3" class="anchored" data-anchor-id="principales-hallazgos"><span class="header-section-number">1.3</span> Principales hallazgos</h2>
+<section id="excelente-desempeño-en-casos-confidenciales" class="level3" data-number="1.3.1">
+<h3 data-number="1.3.1" class="anchored" data-anchor-id="excelente-desempeño-en-casos-confidenciales"><span class="header-section-number">1.3.1</span> Excelente desempeño en casos confidenciales</h3>
+<p>El modelo identifica de manera prácticamente perfecta los casos clasificados como <strong>confidenciales</strong>.</p>
+<p>Esto ocurre porque estos registros tienen características muy distintivas: - Datos faltantes o incompletos - Valores específicos que indican ausencia de información</p>
+<p>En la práctica, el modelo aprende a reconocer estos patrones de forma directa, más que a inferir información compleja.</p>
+<hr>
+</section>
+<section id="buen-desempeño-en-casos-de-desaparición" class="level3" data-number="1.3.2">
+<h3 data-number="1.3.2" class="anchored" data-anchor-id="buen-desempeño-en-casos-de-desaparición"><span class="header-section-number">1.3.2</span> Buen desempeño en casos de desaparición</h3>
+<p>El modelo también tiene un desempeño alto al clasificar casos como <strong>desaparecidos</strong>.</p>
+<p>Esto se debe principalmente a que: - Es la categoría más frecuente en el dataset - Tiene suficientes ejemplos para que el modelo identifique patrones</p>
+<p>Sin embargo, este buen desempeño puede estar influido por la cantidad de datos, más que por una comprensión profunda del problema.</p>
+<hr>
+</section>
+<section id="desempeño-deficiente-en-no-localizada" class="level3" data-number="1.3.3">
+<h3 data-number="1.3.3" class="anchored" data-anchor-id="desempeño-deficiente-en-no-localizada"><span class="header-section-number">1.3.3</span> Desempeño deficiente en “No localizada”</h3>
+<p>El modelo presenta dificultades importantes al identificar casos de <strong>personas no localizadas</strong>:</p>
+<ul>
+<li>Solo reconoce una parte pequeña de los casos reales</li>
+<li>Cuando predice esta categoría, muchas veces se equivoca</li>
+<li>Confunde frecuentemente estos casos con la categoría “desaparecida”</li>
+</ul>
+<p>Esto indica que el modelo <strong>no logra aprender las diferencias reales entre estas dos categorías</strong>, lo cual es un problema importante si se busca hacer análisis más precisos.</p>
+<hr>
+</section>
+<section id="fuerte-sesgo-debido-a-la-distribución-de-los-datos" class="level3" data-number="1.3.4">
+<h3 data-number="1.3.4" class="anchored" data-anchor-id="fuerte-sesgo-debido-a-la-distribución-de-los-datos"><span class="header-section-number">1.3.4</span> Fuerte sesgo debido a la distribución de los datos</h3>
+<p>Uno de los principales problemas detectados es el <strong>desbalance en los datos</strong>:</p>
+<ul>
+<li>Hay muchos más casos de “desaparecida” que de “no localizada”</li>
+<li>El modelo aprende que es más “seguro” predecir la categoría más común</li>
+</ul>
+<p>Esto provoca que: - Clasifique muchos casos como “desaparecida”, incluso cuando no lo son - Tenga dificultades para aprender patrones de las clases menos representadas</p>
+<p>En otras palabras, el modelo está influenciado más por la cantidad de ejemplos que por la calidad de la información.</p>
+<hr>
+</section>
+<section id="impacto-de-los-datos-faltantes-y-confidenciales" class="level3" data-number="1.3.5">
+<h3 data-number="1.3.5" class="anchored" data-anchor-id="impacto-de-los-datos-faltantes-y-confidenciales"><span class="header-section-number">1.3.5</span> Impacto de los datos faltantes y confidenciales</h3>
+<p>El dataset contiene una cantidad considerable de: - Información faltante - Registros marcados como confidenciales</p>
+<p>Esto tiene dos efectos importantes: 1. Facilita la clasificación de “confidencial” (porque es muy evidente) 2. Dificulta la clasificación de los otros casos, ya que falta información clave</p>
+<p>Además, en muchos registros incompletos, varias variables fallan al mismo tiempo, lo que reduce aún más la capacidad de análisis.</p>
+<hr>
+</section>
+<section id="el-modelo-aprende-patrones-artificiales" class="level3" data-number="1.3.6">
+<h3 data-number="1.3.6" class="anchored" data-anchor-id="el-modelo-aprende-patrones-artificiales"><span class="header-section-number">1.3.6</span> El modelo aprende patrones “artificiales”</h3>
+<p>En lugar de aprender relaciones reales entre variables (por ejemplo, factores que influyen en un caso), el modelo tiende a aprender:</p>
+<ul>
+<li>Reglas simples como: “si falta información → es confidencial”</li>
+<li>Tendencias del dataset, como la predominancia de ciertas categorías</li>
+</ul>
+<p>Esto significa que el modelo está capturando más la <strong>estructura de los datos</strong> que el fenómeno real que se quiere estudiar.</p>
+<hr>
+</section>
+</section>
+<section id="conclusión-general" class="level2" data-number="1.4">
+<h2 data-number="1.4" class="anchored" data-anchor-id="conclusión-general"><span class="header-section-number">1.4</span> Conclusión general</h2>
+<p>El modelo muestra un desempeño desigual:</p>
+<ul>
+<li>Es muy bueno detectando casos <strong>confidenciales</strong></li>
+<li>Funciona bien en casos <strong>desaparecidos</strong></li>
+<li>Falla significativamente en casos <strong>no localizados</strong></li>
+</ul>
+<p>En general, el modelo no es completamente confiable para análisis o toma de decisiones, ya que:</p>
+<ul>
+<li>Está sesgado por la distribución de los datos</li>
+<li>Depende fuertemente de patrones triviales (como datos faltantes)</li>
+<li>No logra distinguir adecuadamente entre categorías similares</li>
+</ul>
+<p>Por lo tanto, sus predicciones deben interpretarse con precaución.</p>
+<hr>
+</section>
+<section id="posibles-mejoras" class="level2" data-number="1.5">
+<h2 data-number="1.5" class="anchored" data-anchor-id="posibles-mejoras"><span class="header-section-number">1.5</span> Posibles Mejoras</h2>
+<p>Para mejorar el desempeño del modelo, podríamos realizar las siguientes acciones:</p>
+<ul>
+<li><strong>Balancear el dataset</strong>: aumentar la cantidad de casos de clases poco representadas</li>
+<li><strong>Mejorar la calidad de los datos</strong>: reducir valores faltantes o confidenciales</li>
+<li><strong>Probar otros enfoques</strong>: utilizar modelos o técnicas que manejen mejor el desbalance de clases</li>
+</ul>
+<p>Ahora, muchas de esas acciones son independientes de nosotros, y para su realización sería necesario que la institución encargada del registro de personas desaparecidas mejore la calidad y cantidad de los datos que se registran, lo cual es un proceso complejo que involucra aspectos legales, sociales y técnicos.</p>
+</section>
+</section>
+
+<div id="quarto-appendix" class="default"><section class="quarto-appendix-contents" id="quarto-citation"><h2 class="anchored quarto-appendix-heading">Citation</h2><div><div class="quarto-appendix-secondary-label">BibTeX citation:</div><pre class="sourceCode code-with-copy quarto-appendix-bibtex"><code class="sourceCode bibtex">@online{rubén_alfaro_gonzález2026,
+  author = {Rubén Alfaro González, José and Sanluis, Daniela},
+  title = {Desapariciones En {México}},
+  date = {2026-05-05},
+  langid = {en},
+  abstract = {Este trabajo aplica técnicas de minería de datos al
+    Registro Nacional de Personas Desaparecidas y No Localizadas de
+    México (SESNSP) con dos objetivos complementarios: descubrir
+    patrones de asociación entre variables demográficas, geográficas y
+    temporales, y construir un modelo de clasificación capaz de predecir
+    el estatus de la víctima (DESAPARECIDA, NO LOCALIZADA o
+    CONFIDENCIAL). Se implementó manualmente el algoritmo Apriori y se
+    compararon sus resultados con las implementaciones de librería de
+    Apriori y FP-Growth, evaluando tanto las reglas generadas como los
+    tiempos de ejecución. Para la tarea de clasificación se entrenó un
+    modelo Random Forest con 300 árboles. Los hallazgos principales
+    muestran que la falta de información no es aleatoria sino
+    sistemática: cuando un campo aparece como CONFIDENCIAL, los demás
+    campos del expediente tienden a estarlo también con confianza del
+    100\%. El clasificador alcanza un desempeño excelente para las
+    clases CONFIDENCIAL (F1 = 1.00) y DESAPARECIDA (F1 = 0.97), pero
+    presenta dificultades para distinguir la clase minoritaria NO
+    LOCALIZADA (F1 = 0.38), reflejando el sesgo del propio archivo
+    institucional.}
+}
+</code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre><div class="quarto-appendix-secondary-label">For attribution, please cite this work as:</div><div id="ref-rubén_alfaro_gonzález2026" class="csl-entry quarto-appendix-citeas" role="listitem">
+Rubén Alfaro González, José, and Daniela Sanluis. 2026.
+<span>“Desapariciones En México.”</span> Earth and Space Science, May 5.
+</div></div></section></div></main>
+<!-- /main column -->
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp('/' + window.location.host + '/');
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'quarto',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it 
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+</div> <!-- /content -->
+
+
+
+
+</body></html>

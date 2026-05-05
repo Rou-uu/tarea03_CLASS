@@ -39,7 +39,7 @@ ul.task-list li input[type="checkbox"] {
 <link href="site_libs/quarto-html/quarto-syntax-highlighting-845c23b38eaddc0f92fda52bfe77a8c8.css" rel="stylesheet" id="quarto-text-highlighting-styles">
 <script src="site_libs/bootstrap/bootstrap.min.js"></script>
 <link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
-<link href="site_libs/bootstrap/bootstrap-8ffd5f67044e5306d9846f29df41dda5.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<link href="site_libs/bootstrap/bootstrap-133a0a4dda30ced7f07b755c880e46a0.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
 <script async="" src="https://hypothes.is/embed.js"></script>
 <script>
   window.document.addEventListener("DOMContentLoaded", function (_event) {
@@ -127,21 +127,33 @@ ul.task-list li input[type="checkbox"] {
     <h2 id="toc-title">Table of contents</h2>
    
   <ul>
-  <li><a href="#modelo-clasificatorio" id="toc-modelo-clasificatorio" class="nav-link active" data-scroll-target="#modelo-clasificatorio"><span class="header-section-number">1</span> Modelo Clasificatorio</a>
+  <li><a href="#implementación-del-algoritmo-de-asociación" id="toc-implementación-del-algoritmo-de-asociación" class="nav-link active" data-scroll-target="#implementación-del-algoritmo-de-asociación"><span class="header-section-number">1</span> Implementación del algoritmo de asociación</a></li>
+  <li><a href="#reglas-de-asociación" id="toc-reglas-de-asociación" class="nav-link" data-scroll-target="#reglas-de-asociación"><span class="header-section-number">2</span> Reglas de asociación</a>
   <ul class="collapse">
-  <li><a href="#qué-se-hizo" id="toc-qué-se-hizo" class="nav-link" data-scroll-target="#qué-se-hizo"><span class="header-section-number">1.1</span> ¿Qué se hizo?</a></li>
-  <li><a href="#cómo-se-evaluó-el-modelo" id="toc-cómo-se-evaluó-el-modelo" class="nav-link" data-scroll-target="#cómo-se-evaluó-el-modelo"><span class="header-section-number">1.2</span> ¿Cómo se evaluó el modelo?</a></li>
-  <li><a href="#principales-hallazgos" id="toc-principales-hallazgos" class="nav-link" data-scroll-target="#principales-hallazgos"><span class="header-section-number">1.3</span> Principales hallazgos</a>
+  <li><a href="#proceso-de-preparación" id="toc-proceso-de-preparación" class="nav-link" data-scroll-target="#proceso-de-preparación"><span class="header-section-number">2.1</span> Proceso de Preparación</a></li>
+  <li><a href="#análisis-de-las-reglas-y-hallazgos-principales" id="toc-análisis-de-las-reglas-y-hallazgos-principales" class="nav-link" data-scroll-target="#análisis-de-las-reglas-y-hallazgos-principales"><span class="header-section-number">2.2</span> Análisis de las reglas y hallazgos principales</a>
   <ul class="collapse">
-  <li><a href="#excelente-desempeño-en-casos-confidenciales" id="toc-excelente-desempeño-en-casos-confidenciales" class="nav-link" data-scroll-target="#excelente-desempeño-en-casos-confidenciales"><span class="header-section-number">1.3.1</span> Excelente desempeño en casos confidenciales</a></li>
-  <li><a href="#buen-desempeño-en-casos-de-desaparición" id="toc-buen-desempeño-en-casos-de-desaparición" class="nav-link" data-scroll-target="#buen-desempeño-en-casos-de-desaparición"><span class="header-section-number">1.3.2</span> Buen desempeño en casos de desaparición</a></li>
-  <li><a href="#desempeño-deficiente-en-no-localizada" id="toc-desempeño-deficiente-en-no-localizada" class="nav-link" data-scroll-target="#desempeño-deficiente-en-no-localizada"><span class="header-section-number">1.3.3</span> Desempeño deficiente en “No localizada”</a></li>
-  <li><a href="#fuerte-sesgo-debido-a-la-distribución-de-los-datos" id="toc-fuerte-sesgo-debido-a-la-distribución-de-los-datos" class="nav-link" data-scroll-target="#fuerte-sesgo-debido-a-la-distribución-de-los-datos"><span class="header-section-number">1.3.4</span> Fuerte sesgo debido a la distribución de los datos</a></li>
-  <li><a href="#impacto-de-los-datos-faltantes-y-confidenciales" id="toc-impacto-de-los-datos-faltantes-y-confidenciales" class="nav-link" data-scroll-target="#impacto-de-los-datos-faltantes-y-confidenciales"><span class="header-section-number">1.3.5</span> Impacto de los datos faltantes y confidenciales</a></li>
-  <li><a href="#el-modelo-aprende-patrones-artificiales" id="toc-el-modelo-aprende-patrones-artificiales" class="nav-link" data-scroll-target="#el-modelo-aprende-patrones-artificiales"><span class="header-section-number">1.3.6</span> El modelo aprende patrones “artificiales”</a></li>
+  <li><a href="#opacidad-sistémica-y-datos-confidenciales" id="toc-opacidad-sistémica-y-datos-confidenciales" class="nav-link" data-scroll-target="#opacidad-sistémica-y-datos-confidenciales"><span class="header-section-number">2.2.1</span> Opacidad Sistémica y Datos Confidenciales</a></li>
+  <li><a href="#hallazgos-por-entidad-federativa-jalisco-vs.-estado-de-méxico" id="toc-hallazgos-por-entidad-federativa-jalisco-vs.-estado-de-méxico" class="nav-link" data-scroll-target="#hallazgos-por-entidad-federativa-jalisco-vs.-estado-de-méxico"><span class="header-section-number">2.2.2</span> Hallazgos por Entidad Federativa (Jalisco vs.&nbsp;Estado de México)</a></li>
+  <li><a href="#registros-incompletos" id="toc-registros-incompletos" class="nav-link" data-scroll-target="#registros-incompletos"><span class="header-section-number">2.2.3</span> Registros Incompletos</a></li>
   </ul></li>
-  <li><a href="#conclusión-general" id="toc-conclusión-general" class="nav-link" data-scroll-target="#conclusión-general"><span class="header-section-number">1.4</span> Conclusión general</a></li>
-  <li><a href="#posibles-mejoras" id="toc-posibles-mejoras" class="nav-link" data-scroll-target="#posibles-mejoras"><span class="header-section-number">1.5</span> Posibles Mejoras</a></li>
+  <li><a href="#comparación-de-eficiencia" id="toc-comparación-de-eficiencia" class="nav-link" data-scroll-target="#comparación-de-eficiencia"><span class="header-section-number">2.3</span> Comparación de eficiencia</a></li>
+  </ul></li>
+  <li><a href="#modelo-clasificatorio" id="toc-modelo-clasificatorio" class="nav-link" data-scroll-target="#modelo-clasificatorio"><span class="header-section-number">3</span> Modelo Clasificatorio</a>
+  <ul class="collapse">
+  <li><a href="#qué-se-hizo" id="toc-qué-se-hizo" class="nav-link" data-scroll-target="#qué-se-hizo"><span class="header-section-number">3.1</span> ¿Qué se hizo?</a></li>
+  <li><a href="#cómo-se-evaluó-el-modelo" id="toc-cómo-se-evaluó-el-modelo" class="nav-link" data-scroll-target="#cómo-se-evaluó-el-modelo"><span class="header-section-number">3.2</span> ¿Cómo se evaluó el modelo?</a></li>
+  <li><a href="#principales-hallazgos" id="toc-principales-hallazgos" class="nav-link" data-scroll-target="#principales-hallazgos"><span class="header-section-number">3.3</span> Principales hallazgos</a>
+  <ul class="collapse">
+  <li><a href="#excelente-desempeño-en-casos-confidenciales" id="toc-excelente-desempeño-en-casos-confidenciales" class="nav-link" data-scroll-target="#excelente-desempeño-en-casos-confidenciales"><span class="header-section-number">3.3.1</span> Excelente desempeño en casos confidenciales</a></li>
+  <li><a href="#buen-desempeño-en-casos-de-desaparición" id="toc-buen-desempeño-en-casos-de-desaparición" class="nav-link" data-scroll-target="#buen-desempeño-en-casos-de-desaparición"><span class="header-section-number">3.3.2</span> Buen desempeño en casos de desaparición</a></li>
+  <li><a href="#desempeño-deficiente-en-no-localizada" id="toc-desempeño-deficiente-en-no-localizada" class="nav-link" data-scroll-target="#desempeño-deficiente-en-no-localizada"><span class="header-section-number">3.3.3</span> Desempeño deficiente en “No localizada”</a></li>
+  <li><a href="#fuerte-sesgo-debido-a-la-distribución-de-los-datos" id="toc-fuerte-sesgo-debido-a-la-distribución-de-los-datos" class="nav-link" data-scroll-target="#fuerte-sesgo-debido-a-la-distribución-de-los-datos"><span class="header-section-number">3.3.4</span> Fuerte sesgo debido a la distribución de los datos</a></li>
+  <li><a href="#impacto-de-los-datos-faltantes-y-confidenciales" id="toc-impacto-de-los-datos-faltantes-y-confidenciales" class="nav-link" data-scroll-target="#impacto-de-los-datos-faltantes-y-confidenciales"><span class="header-section-number">3.3.5</span> Impacto de los datos faltantes y confidenciales</a></li>
+  <li><a href="#el-modelo-aprende-patrones-artificiales" id="toc-el-modelo-aprende-patrones-artificiales" class="nav-link" data-scroll-target="#el-modelo-aprende-patrones-artificiales"><span class="header-section-number">3.3.6</span> El modelo aprende patrones “artificiales”</a></li>
+  </ul></li>
+  <li><a href="#conclusión-general" id="toc-conclusión-general" class="nav-link" data-scroll-target="#conclusión-general"><span class="header-section-number">3.4</span> Conclusión general</a></li>
+  <li><a href="#posibles-mejoras" id="toc-posibles-mejoras" class="nav-link" data-scroll-target="#posibles-mejoras"><span class="header-section-number">3.5</span> Posibles Mejoras</a></li>
   </ul></li>
   </ul>
 </nav>
@@ -155,38 +167,102 @@ ul.task-list li input[type="checkbox"] {
   
 
 
-<section id="modelo-clasificatorio" class="level1" data-number="1">
-<h1 data-number="1"><span class="header-section-number">1</span> Modelo Clasificatorio</h1>
-<section id="qué-se-hizo" class="level2" data-number="1.1">
-<h2 data-number="1.1" class="anchored" data-anchor-id="qué-se-hizo"><span class="header-section-number">1.1</span> ¿Qué se hizo?</h2>
+<section id="implementación-del-algoritmo-de-asociación" class="level1" data-number="1">
+<h1 data-number="1"><span class="header-section-number">1</span> Implementación del algoritmo de asociación</h1>
+<p>En esta primera fase analizamos información sobre personas desaparecidas en México. El objetivo no es solo contar números, sino encontrar patrones ocultos que nos ayuden a entender cómo se registran estos casos y qué historias nos cuentan los datos.</p>
+<p>Para lograr esto de manera transparente, realizamos dos procesos fundamentales:</p>
+<ol type="1">
+<li>Diseñamos una función llamada apriori_manual que actúa como un filtro inteligente. Esta herramienta recorre todos los registros y agrupa las características (como edad, sexo o estado) para ver cuáles se repiten constantemente</li>
+<li>Una vez identificados los grupos frecuentes, usamos la función sacando_reglas para traducir esos hallazgos en frases lógicas del tipo: “Si ocurre A, es muy probable que también ocurra B”.</li>
+</ol>
+<hr>
+</section>
+<section id="reglas-de-asociación" class="level1" data-number="2">
+<h1 data-number="2"><span class="header-section-number">2</span> Reglas de asociación</h1>
+<p>En esta sección detallamos el descubrimiento de patrones utilizando el conjunto de datos de personas desaparecidas.</p>
+<section id="proceso-de-preparación" class="level2" data-number="2.1">
+<h2 data-number="2.1" class="anchored" data-anchor-id="proceso-de-preparación"><span class="header-section-number">2.1</span> Proceso de Preparación</h2>
+<p>Para que el análisis fuera confiable, primero tuvimos que “limpiar” y organizar la información:</p>
+<ol type="1">
+<li>En lugar de usar números sueltos, agrupamos a las personas en etapas de la vida como “Niñez”, “12-17”, “Adulto” y “Adulto Mayor”. Esto facilita ver si ciertos grupos de edad son más vulnerables en contextos específicos.</li>
+<li>Decidimos no borrar los expedientes que dicen “CONFIDENCIAL” o “SIN DATO”. Al mantenerlos, pudimos investigar si la falta de información es un error al azar o si sigue un patrón intencionado por parte de las autoridades.</li>
+<li>Calculamos la edad de las víctimas y extrajimos el mes de desaparición para capturar patrones temporales.</li>
+</ol>
+</section>
+<section id="análisis-de-las-reglas-y-hallazgos-principales" class="level2" data-number="2.2">
+<h2 data-number="2.2" class="anchored" data-anchor-id="análisis-de-las-reglas-y-hallazgos-principales"><span class="header-section-number">2.2</span> Análisis de las reglas y hallazgos principales</h2>
+<p>Al ejecutar algoritmos Apriori (implementación y de librería) y FP-Growth, hemos identificado patrones críticos que revelan cómo se estructura la información de las personas desaparecidas en el dataset. Los hallazgos más relevantes se dividen en tres categorías principales:</p>
+<hr>
+<section id="opacidad-sistémica-y-datos-confidenciales" class="level3" data-number="2.2.1">
+<h3 data-number="2.2.1" class="anchored" data-anchor-id="opacidad-sistémica-y-datos-confidenciales"><span class="header-section-number">2.2.1</span> Opacidad Sistémica y Datos Confidenciales</h3>
+<p>Las reglas con mayor confianza (1.0) muestran que la falta de información no es un error aleatorio, sino una característica vinculada a la gestión de los expedientes:</p>
+<ol type="1">
+<li>Si el estatus de la víctima es “Confidencial”, el sexo de la persona también lo es en el 100% de los casos (Confianza: 1.0). Esto indica que la etiqueta “Confidencial” se aplica de forma masiva a todas las variables demográficas del registro.</li>
+<li>Existe una relación directa entre los expedientes marcados como confidenciales y la falta de un mes de desaparición registrado. La regla muestra que el 100% de los casos confidenciales carecen también del dato sobre el mes del suceso.</li>
+</ol>
+<hr>
+</section>
+<section id="hallazgos-por-entidad-federativa-jalisco-vs.-estado-de-méxico" class="level3" data-number="2.2.2">
+<h3 data-number="2.2.2" class="anchored" data-anchor-id="hallazgos-por-entidad-federativa-jalisco-vs.-estado-de-méxico"><span class="header-section-number">2.2.2</span> Hallazgos por Entidad Federativa (Jalisco vs.&nbsp;Estado de México)</h3>
+<p>El análisis permite segmentar comportamientos muy distintos dependiendo del estado analizado:</p>
+<ol type="1">
+<li>Jalisco destaca por una alta deficiencia en la calidad de sus datos. Si una persona desaparece en Jalisco, existe un 82.7% de probabilidad de que su edad sea registrada como “Desconocida”. Además, hay un 67.5% de confianza de que tanto el sexo como el estatus de la víctima se clasifiquen como “Confidencial”.</li>
+<li>A diferencia de la opacidad observada en otros puntos, en el Estado de México existe una confianza del 72.3% de que el estatus de las víctimas sea explícitamente “Desaparecida”. Asimismo, se asocia frecuentemente con el grupo de edad “Adulto” (50.1% de confianza).</li>
+</ol>
+<hr>
+</section>
+<section id="registros-incompletos" class="level3" data-number="2.2.3">
+<h3 data-number="2.2.3" class="anchored" data-anchor-id="registros-incompletos"><span class="header-section-number">2.2.3</span> Registros Incompletos</h3>
+<p>Los algoritmos detectaron que la falta de información suele ocurrir “en bloque”:</p>
+<ol type="1">
+<li>Cuando no se conoce el mes de desaparición (mes_desparicion_SIN_DATO), existe un 91.5% de probabilidad de que tampoco se conozca la edad de la víctima (GRUPO_EDAD_EDAD_DESCONOCIDA).</li>
+</ol>
+<p>Esto sugiere que existen dos tipos de registros: aquellos con información completa y útil para el análisis social, y un grupo significativo de registros que son prácticamente nulos o inaccesibles para la investigación debido a restricciones administrativas o descuidos en la captura.</p>
+<hr>
+</section>
+</section>
+<section id="comparación-de-eficiencia" class="level2" data-number="2.3">
+<h2 data-number="2.3" class="anchored" data-anchor-id="comparación-de-eficiencia"><span class="header-section-number">2.3</span> Comparación de eficiencia</h2>
+<p>Finalmente, pusimos a prueba tres métodos distintos para encontrar estas reglas:</p>
+<ul>
+<li>Nuestra implementación fue la más lenta, tardando aproximadamente 1.4508 segundos. Esto se debe a que revisa los datos paso a paso de forma muy detallada.</li>
+<li>Algoritmos como FP-Growth y el Apriori optimizado tardaron menos de un segundo. Son mucho más rápidos porque utilizan estructuras de búsqueda inteligente que ahorran esfuerzo a la computadora.</li>
+</ul>
+<p>A pesar de la diferencia de velocidad, todos los métodos encontraron exactamente las mismas 142 reglas, lo que confirma que nuestros cálculos manuales son correctos y confiables.</p>
+</section>
+</section>
+<section id="modelo-clasificatorio" class="level1" data-number="3">
+<h1 data-number="3"><span class="header-section-number">3</span> Modelo Clasificatorio</h1>
+<section id="qué-se-hizo" class="level2" data-number="3.1">
+<h2 data-number="3.1" class="anchored" data-anchor-id="qué-se-hizo"><span class="header-section-number">3.1</span> ¿Qué se hizo?</h2>
 <p>Se desarrolló un modelo de clasificación con el objetivo de predecir el <strong>estatus de una persona</strong> dentro del dataset (por ejemplo: desaparecida, no localizada o confidencial), utilizando información como edad, ubicación, sexo y otros datos disponibles.</p>
 <p>El propósito principal era identificar si estos datos permiten encontrar patrones que ayuden a distinguir entre los distintos tipos de casos.</p>
 <hr>
 </section>
-<section id="cómo-se-evaluó-el-modelo" class="level2" data-number="1.2">
-<h2 data-number="1.2" class="anchored" data-anchor-id="cómo-se-evaluó-el-modelo"><span class="header-section-number">1.2</span> ¿Cómo se evaluó el modelo?</h2>
+<section id="cómo-se-evaluó-el-modelo" class="level2" data-number="3.2">
+<h2 data-number="3.2" class="anchored" data-anchor-id="cómo-se-evaluó-el-modelo"><span class="header-section-number">3.2</span> ¿Cómo se evaluó el modelo?</h2>
 <p>Para evaluar el desempeño del modelo, no solo se revisó qué tan seguido acierta en general, sino también qué tan bien identifica cada tipo de caso en particular.</p>
 <p>Esto es importante porque no todas las categorías están igualmente representadas en los datos, por lo que una buena “precisión general” puede ser engañosa.</p>
 <hr>
 </section>
-<section id="principales-hallazgos" class="level2" data-number="1.3">
-<h2 data-number="1.3" class="anchored" data-anchor-id="principales-hallazgos"><span class="header-section-number">1.3</span> Principales hallazgos</h2>
-<section id="excelente-desempeño-en-casos-confidenciales" class="level3" data-number="1.3.1">
-<h3 data-number="1.3.1" class="anchored" data-anchor-id="excelente-desempeño-en-casos-confidenciales"><span class="header-section-number">1.3.1</span> Excelente desempeño en casos confidenciales</h3>
+<section id="principales-hallazgos" class="level2" data-number="3.3">
+<h2 data-number="3.3" class="anchored" data-anchor-id="principales-hallazgos"><span class="header-section-number">3.3</span> Principales hallazgos</h2>
+<section id="excelente-desempeño-en-casos-confidenciales" class="level3" data-number="3.3.1">
+<h3 data-number="3.3.1" class="anchored" data-anchor-id="excelente-desempeño-en-casos-confidenciales"><span class="header-section-number">3.3.1</span> Excelente desempeño en casos confidenciales</h3>
 <p>El modelo identifica de manera prácticamente perfecta los casos clasificados como <strong>confidenciales</strong>.</p>
 <p>Esto ocurre porque estos registros tienen características muy distintivas: - Datos faltantes o incompletos - Valores específicos que indican ausencia de información</p>
 <p>En la práctica, el modelo aprende a reconocer estos patrones de forma directa, más que a inferir información compleja.</p>
 <hr>
 </section>
-<section id="buen-desempeño-en-casos-de-desaparición" class="level3" data-number="1.3.2">
-<h3 data-number="1.3.2" class="anchored" data-anchor-id="buen-desempeño-en-casos-de-desaparición"><span class="header-section-number">1.3.2</span> Buen desempeño en casos de desaparición</h3>
+<section id="buen-desempeño-en-casos-de-desaparición" class="level3" data-number="3.3.2">
+<h3 data-number="3.3.2" class="anchored" data-anchor-id="buen-desempeño-en-casos-de-desaparición"><span class="header-section-number">3.3.2</span> Buen desempeño en casos de desaparición</h3>
 <p>El modelo también tiene un desempeño alto al clasificar casos como <strong>desaparecidos</strong>.</p>
 <p>Esto se debe principalmente a que: - Es la categoría más frecuente en el dataset - Tiene suficientes ejemplos para que el modelo identifique patrones</p>
 <p>Sin embargo, este buen desempeño puede estar influido por la cantidad de datos, más que por una comprensión profunda del problema.</p>
 <hr>
 </section>
-<section id="desempeño-deficiente-en-no-localizada" class="level3" data-number="1.3.3">
-<h3 data-number="1.3.3" class="anchored" data-anchor-id="desempeño-deficiente-en-no-localizada"><span class="header-section-number">1.3.3</span> Desempeño deficiente en “No localizada”</h3>
+<section id="desempeño-deficiente-en-no-localizada" class="level3" data-number="3.3.3">
+<h3 data-number="3.3.3" class="anchored" data-anchor-id="desempeño-deficiente-en-no-localizada"><span class="header-section-number">3.3.3</span> Desempeño deficiente en “No localizada”</h3>
 <p>El modelo presenta dificultades importantes al identificar casos de <strong>personas no localizadas</strong>:</p>
 <ul>
 <li>Solo reconoce una parte pequeña de los casos reales</li>
@@ -196,8 +272,8 @@ ul.task-list li input[type="checkbox"] {
 <p>Esto indica que el modelo <strong>no logra aprender las diferencias reales entre estas dos categorías</strong>, lo cual es un problema importante si se busca hacer análisis más precisos.</p>
 <hr>
 </section>
-<section id="fuerte-sesgo-debido-a-la-distribución-de-los-datos" class="level3" data-number="1.3.4">
-<h3 data-number="1.3.4" class="anchored" data-anchor-id="fuerte-sesgo-debido-a-la-distribución-de-los-datos"><span class="header-section-number">1.3.4</span> Fuerte sesgo debido a la distribución de los datos</h3>
+<section id="fuerte-sesgo-debido-a-la-distribución-de-los-datos" class="level3" data-number="3.3.4">
+<h3 data-number="3.3.4" class="anchored" data-anchor-id="fuerte-sesgo-debido-a-la-distribución-de-los-datos"><span class="header-section-number">3.3.4</span> Fuerte sesgo debido a la distribución de los datos</h3>
 <p>Uno de los principales problemas detectados es el <strong>desbalance en los datos</strong>:</p>
 <ul>
 <li>Hay muchos más casos de “desaparecida” que de “no localizada”</li>
@@ -207,15 +283,15 @@ ul.task-list li input[type="checkbox"] {
 <p>En otras palabras, el modelo está influenciado más por la cantidad de ejemplos que por la calidad de la información.</p>
 <hr>
 </section>
-<section id="impacto-de-los-datos-faltantes-y-confidenciales" class="level3" data-number="1.3.5">
-<h3 data-number="1.3.5" class="anchored" data-anchor-id="impacto-de-los-datos-faltantes-y-confidenciales"><span class="header-section-number">1.3.5</span> Impacto de los datos faltantes y confidenciales</h3>
+<section id="impacto-de-los-datos-faltantes-y-confidenciales" class="level3" data-number="3.3.5">
+<h3 data-number="3.3.5" class="anchored" data-anchor-id="impacto-de-los-datos-faltantes-y-confidenciales"><span class="header-section-number">3.3.5</span> Impacto de los datos faltantes y confidenciales</h3>
 <p>El dataset contiene una cantidad considerable de: - Información faltante - Registros marcados como confidenciales</p>
 <p>Esto tiene dos efectos importantes: 1. Facilita la clasificación de “confidencial” (porque es muy evidente) 2. Dificulta la clasificación de los otros casos, ya que falta información clave</p>
 <p>Además, en muchos registros incompletos, varias variables fallan al mismo tiempo, lo que reduce aún más la capacidad de análisis.</p>
 <hr>
 </section>
-<section id="el-modelo-aprende-patrones-artificiales" class="level3" data-number="1.3.6">
-<h3 data-number="1.3.6" class="anchored" data-anchor-id="el-modelo-aprende-patrones-artificiales"><span class="header-section-number">1.3.6</span> El modelo aprende patrones “artificiales”</h3>
+<section id="el-modelo-aprende-patrones-artificiales" class="level3" data-number="3.3.6">
+<h3 data-number="3.3.6" class="anchored" data-anchor-id="el-modelo-aprende-patrones-artificiales"><span class="header-section-number">3.3.6</span> El modelo aprende patrones “artificiales”</h3>
 <p>En lugar de aprender relaciones reales entre variables (por ejemplo, factores que influyen en un caso), el modelo tiende a aprender:</p>
 <ul>
 <li>Reglas simples como: “si falta información → es confidencial”</li>
@@ -225,8 +301,8 @@ ul.task-list li input[type="checkbox"] {
 <hr>
 </section>
 </section>
-<section id="conclusión-general" class="level2" data-number="1.4">
-<h2 data-number="1.4" class="anchored" data-anchor-id="conclusión-general"><span class="header-section-number">1.4</span> Conclusión general</h2>
+<section id="conclusión-general" class="level2" data-number="3.4">
+<h2 data-number="3.4" class="anchored" data-anchor-id="conclusión-general"><span class="header-section-number">3.4</span> Conclusión general</h2>
 <p>El modelo muestra un desempeño desigual:</p>
 <ul>
 <li>Es muy bueno detectando casos <strong>confidenciales</strong></li>
@@ -242,8 +318,8 @@ ul.task-list li input[type="checkbox"] {
 <p>Por lo tanto, sus predicciones deben interpretarse con precaución.</p>
 <hr>
 </section>
-<section id="posibles-mejoras" class="level2" data-number="1.5">
-<h2 data-number="1.5" class="anchored" data-anchor-id="posibles-mejoras"><span class="header-section-number">1.5</span> Posibles Mejoras</h2>
+<section id="posibles-mejoras" class="level2" data-number="3.5">
+<h2 data-number="3.5" class="anchored" data-anchor-id="posibles-mejoras"><span class="header-section-number">3.5</span> Posibles Mejoras</h2>
 <p>Para mejorar el desempeño del modelo, podríamos realizar las siguientes acciones:</p>
 <ul>
 <li><strong>Balancear el dataset</strong>: aumentar la cantidad de casos de clases poco representadas</li>

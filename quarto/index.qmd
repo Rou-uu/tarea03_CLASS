@@ -22,6 +22,64 @@ citation:
 number-sections: true
 jupyter: python3
 ---
+# Implementación del algoritmo de asociación
+En esta primera fase analizamos información sobre personas desaparecidas en México. El objetivo no es solo contar números, sino encontrar patrones ocultos que nos ayuden a entender cómo se registran estos casos y qué historias nos cuentan los datos.
+
+Para lograr esto de manera transparente, realizamos dos procesos fundamentales:
+
+1. Diseñamos una función llamada apriori_manual que actúa como un filtro inteligente. Esta herramienta recorre todos los registros y agrupa las características (como edad, sexo o estado) para ver cuáles se repiten constantemente
+2. Una vez identificados los grupos frecuentes, usamos la función sacando_reglas para traducir esos hallazgos en frases lógicas del tipo: "Si ocurre A, es muy probable que también ocurra B".
+
+---
+
+# Reglas de asociación
+En esta sección detallamos el descubrimiento de patrones utilizando el conjunto de datos de personas desaparecidas.
+
+## Proceso de Preparación
+Para que el análisis fuera confiable, primero tuvimos que "limpiar" y organizar la información:
+
+1. En lugar de usar números sueltos, agrupamos a las personas en etapas de la vida como "Niñez", "12-17", "Adulto" y "Adulto Mayor". Esto facilita ver si ciertos grupos de edad son más vulnerables en contextos específicos.
+2. Decidimos no borrar los expedientes que dicen "CONFIDENCIAL" o "SIN DATO". Al mantenerlos, pudimos investigar si la falta de información es un error al azar o si sigue un patrón intencionado por parte de las autoridades.
+3. Calculamos la edad de las víctimas y extrajimos el mes de desaparición para capturar patrones temporales.
+
+## Análisis de las reglas y hallazgos principales
+Al ejecutar algoritmos Apriori (implementación y de librería) y FP-Growth, hemos identificado patrones críticos que revelan cómo se estructura la información de las personas desaparecidas en el dataset. Los hallazgos más relevantes se dividen en tres categorías principales:
+
+---
+
+### Opacidad Sistémica y Datos Confidenciales
+Las reglas con mayor confianza (1.0) muestran que la falta de información no es un error aleatorio, sino una característica vinculada a la gestión de los expedientes:
+
+1. Si el estatus de la víctima es "Confidencial", el sexo de la persona también lo es en el 100% de los casos (Confianza: 1.0). Esto indica que la etiqueta "Confidencial" se aplica de forma masiva a todas las variables demográficas del registro.
+2. Existe una relación directa entre los expedientes marcados como confidenciales y la falta de un mes de desaparición registrado. La regla muestra que el 100% de los casos confidenciales carecen también del dato sobre el mes del suceso.
+
+---
+
+### Hallazgos por Entidad Federativa (Jalisco vs. Estado de México)
+El análisis permite segmentar comportamientos muy distintos dependiendo del estado analizado:
+
+1. Jalisco destaca por una alta deficiencia en la calidad de sus datos.
+Si una persona desaparece en Jalisco, existe un 82.7% de probabilidad de que su edad sea registrada como "Desconocida". Además, hay un 67.5% de confianza de que tanto el sexo como el estatus de la víctima se clasifiquen como "Confidencial".
+2. A diferencia de la opacidad observada en otros puntos, en el Estado de México existe una confianza del 72.3% de que el estatus de las víctimas sea explícitamente "Desaparecida". Asimismo, se asocia frecuentemente con el grupo de edad "Adulto" (50.1% de confianza).
+
+---
+
+### Registros Incompletos
+Los algoritmos detectaron que la falta de información suele ocurrir "en bloque":
+
+1. Cuando no se conoce el mes de desaparición (mes_desparicion_SIN_DATO), existe un 91.5% de probabilidad de que tampoco se conozca la edad de la víctima (GRUPO_EDAD_EDAD_DESCONOCIDA).
+
+Esto sugiere que existen dos tipos de registros: aquellos con información completa y útil para el análisis social, y un grupo significativo de registros que son prácticamente nulos o inaccesibles para la investigación debido a restricciones administrativas o descuidos en la captura.
+
+ ---
+
+## Comparación de eficiencia
+ Finalmente, pusimos a prueba tres métodos distintos para encontrar estas reglas:
+
+ - Nuestra implementación fue la más lenta, tardando aproximadamente 1.4508 segundos. Esto se debe a que revisa los datos paso a paso de forma muy detallada.
+ - Algoritmos como FP-Growth y el Apriori optimizado tardaron menos de un segundo. Son mucho más rápidos porque utilizan estructuras de búsqueda inteligente que ahorran esfuerzo a la computadora.
+
+ A pesar de la diferencia de velocidad, todos los métodos encontraron exactamente las mismas 142 reglas, lo que confirma que nuestros cálculos manuales son correctos y confiables.
 
 # Modelo Clasificatorio
 
